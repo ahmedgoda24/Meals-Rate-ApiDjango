@@ -9,15 +9,35 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from django.contrib.auth.models import User
+from rest_framework.authentication import TokenAuthentication
+from rest_framework.permissions import  AllowAny, IsAuthenticated, IsAdminUser, IsAuthenticatedOrReadOnly
+from rest_framework.authtoken.models import Token
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-
+    # authentication_classes = (TokenAuthentication, )
+    permission_classes = (AllowAny,)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        token, created = Token.objects.get_or_create(user=serializer.instance)
+        return Response({
+                'user created successfully'
+                'token': token.key, 
+                }, 
+            status=status.HTTP_201_CREATED)
+    
+    def list(self, request, *args, **kwargs):
+        response = {'message': 'You dont have access to this action'}
+        return Response(response, status=status.HTTP_400_BAD_REQUEST)
 class MealViewSet(viewsets.ModelViewSet):
     queryset = Meal.objects.all()
     serializer_class = MealSerializer
-
+    authentication_classes = (TokenAuthentication, )
+    permission_classes = (IsAuthenticated,)
+    
     @action(detail=True, methods=['post'])
     def rate_meal(self, request, pk=None):
         if 'stars' in request.data:
@@ -26,10 +46,10 @@ class MealViewSet(viewsets.ModelViewSet):
             '''
             meal = Meal.objects.get(id=pk)
             stars = request.data['stars']
-            # user = request.user
-            #print(user)
-            username = request.data['username']
-            user = User.objects.get(username=username)
+            user = request.user
+            print(user)
+            # username = request.data['username']
+            # user = User.objects.get(username=username)
 
             try:
                 # update
@@ -39,6 +59,7 @@ class MealViewSet(viewsets.ModelViewSet):
                 serializer = RatingSerializer(rating, many=False)
                 json = {
                     'message': 'Meal Rate Updated',
+                    # 'user':request.user,
                     'result': serializer.data
                 }
                 return Response(json , status=status.HTTP_400_BAD_REQUEST)
@@ -49,6 +70,7 @@ class MealViewSet(viewsets.ModelViewSet):
                 serializer = RatingSerializer(rating, many=False)
                 json = {
                     'message': 'Meal Rate Created',
+                    # 'user':request.user,
                     'result': serializer.data
                 }
                 return Response(json , status=status.HTTP_200_OK)
@@ -65,3 +87,18 @@ class MealViewSet(viewsets.ModelViewSet):
 class RatingViewSet(viewsets.ModelViewSet):
     queryset = Rating.objects.all()
     serializer_class = RatingSerializer
+    authentication_classes = (TokenAuthentication, )
+    permission_classes = (IsAuthenticated)
+    def update(self, request, *args, **kwargs):
+        response = {
+            'message': 'Invalid way to create or update '
+            }
+
+        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+    
+    def create(self, request, *args, **kwargs):
+        response = {
+            'message': 'Invalid way to create or update '
+            }
+
+        return Response(response, status=status.HTTP_400_BAD_REQUEST)
