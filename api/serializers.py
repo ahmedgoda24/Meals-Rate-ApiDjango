@@ -15,7 +15,7 @@ class UserSerializer(serializers.ModelSerializer):
 class MealSerializer(serializers.ModelSerializer):
     class Meta:
         model = Meal
-        fields = ('id', 'title', 'description')
+        fields = ('id', 'title', 'description','num_of_rating','avr_rating')
 
 class RatingSerializer(serializers.ModelSerializer):
     # meal_title = serializers.CharField(source='meal.title')
